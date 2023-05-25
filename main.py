@@ -1,7 +1,6 @@
 ### Copyright (C) 2020 Roy Or-El. All rights reserved.
 ### Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode).
 import os
-import io
 import scipy # this is to prevent a potential error caused by importing torch before scipy (happens due to a bad combination of torch & scipy versions)
 from collections import OrderedDict
 from options.test_options import TestOptions
@@ -12,12 +11,18 @@ from util.visualizer import Visualizer
 from util import html
 import torch
 from pdb import set_trace as st
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify
 from google.cloud import storage
 import imageio
 import cv2
 import uuid
 from datetime import datetime
+
+import replicate
+from io import BytesIO
+
+#Set the REPLICATE_API_TOKEN environment variable
+os.environ["REPLICATE_API_TOKEN"] =  "r8_W9eZaZk2Xdikeun3JeH0GZC97kLuZyY16Kkob"
 
 app = Flask(__name__)
 
@@ -129,8 +134,8 @@ def save_image_to_gcloud(source_file_name):
     return blob.public_url
 
 
-@app.route('/upload', methods=['POST'])
-def upload_file():
+@app.route('/predict_using_lats_model', methods=['POST'])
+def predict_using_lats_model():
     input_image = request.files['file']
     opt = TestOptions().parse(save=False)
     video_output_path = predict(opt, input_image)
@@ -166,4 +171,24 @@ def upload_file():
         'outputFilePath': output_file_path
     }
 
+    return jsonify(data)
+
+@app.route('/predict_using_sam_model', methods=['POST'])
+def predict_using_sam_model():
+    print("[START] Predict with SAM model")
+    input_image = request.files['file']
+
+    # Đọc dữ liệu từ input_image
+    image_data = input_image.read()
+   
+    output = replicate.run(
+        "yuval-alaluf/sam:9222a21c181b707209ef12b5e0d7e94c994b58f01c7b2fec075d2e892362f13c",
+        input={"image": BytesIO(image_data), "target_age": "default"}
+    )
+    # output_file_path = save_image_to_gcloud(gif_path)
+
+    data = {
+        'outputFilePath': output
+    }
+    print("[END] Predict with SAM model")
     return jsonify(data)
