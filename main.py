@@ -134,7 +134,7 @@ def save_image_to_gcloud(source_file_name):
     return blob.public_url
 
 
-@app.route('/predict_using_lats_model', methods=['POST'])
+@app.route('/predict-using-lats-model', methods=['POST'])
 def predict_using_lats_model():
     input_image = request.files['file']
     opt = TestOptions().parse(save=False)
@@ -173,7 +173,7 @@ def predict_using_lats_model():
 
     return jsonify(data)
 
-@app.route('/predict_using_sam_model', methods=['POST'])
+@app.route('/predict-using-sam-model', methods=['POST'])
 def predict_using_sam_model():
     print("[START] Predict with SAM model")
     input_image = request.files['file']
@@ -191,4 +191,31 @@ def predict_using_sam_model():
         'outputFilePath': output
     }
     print("[END] Predict with SAM model")
+    return jsonify(data)
+
+@app.route('/predict-using-sam-model-with-target-age', methods=['POST'])
+def predict_using_sam_model_with_target_age():
+    print("[START] Predict with SAM model with target age")
+    try:
+        input_image = request.files['file']
+        target_age = int(request.form['targetAge'])
+
+        print('Target age = ' + target_age)
+    except (KeyError, ValueError, TypeError):
+        # Handle the case when the parameter is missing or not a valid integer
+        return "Invalid parameter: 'targetAge' must be provided as an integer", 400
+
+    # Đọc dữ liệu từ input_image
+    image_data = input_image.read()
+   
+    output = replicate.run(
+        "yuval-alaluf/sam:9222a21c181b707209ef12b5e0d7e94c994b58f01c7b2fec075d2e892362f13c",
+        input={"image": BytesIO(image_data), "target_age": str(target_age)}
+    )
+    # output_file_path = save_image_to_gcloud(gif_path)
+
+    data = {
+        'outputFilePath': output
+    }
+    print("[END] Predict with SAM model with target age")
     return jsonify(data)
