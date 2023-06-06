@@ -196,10 +196,9 @@ def predict_using_sam_model():
 @app.route('/predict-using-sam-model-with-target-age', methods=['POST'])
 def predict_using_sam_model_with_target_age():
     print("[START] Predict with SAM model with target age")
+    input_image = request.files['file']
     try:
-        input_image = request.files['file']
-        target_age = int(request.form['targetAge'])
-
+        target_age = request.form['targetAge']
         print('Target age = ' + target_age)
     except (KeyError, ValueError, TypeError):
         # Handle the case when the parameter is missing or not a valid integer
